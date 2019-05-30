@@ -3,6 +3,7 @@
 
 #include <process.h>
 #include <vector>
+#include <algorithm>
 
 template <class T>
 class SimpleThreadBase {
@@ -10,7 +11,7 @@ public:
 	typedef std::vector<HANDLE> EventArray;
 
 	struct ThreadStartParam {
-		SimpleThreadBase *self;
+		SimpleThreadBase *self_;
 		HANDLE prepare, stop;
 		T param;
 	};
@@ -65,7 +66,7 @@ protected:
 	void closeEvent(HANDLE ev) {
 		if (ev) {
 			::CloseHandle(ev);
-			events.remove(ev);
+			events.erase(std::remove(events.begin(), events.end(), ev), events.end());
 		}
 	}
 
@@ -73,7 +74,7 @@ protected:
 private:
 	static unsigned __stdcall threadFunc(void *vparam) {
 		ThreadStartParam *param = (ThreadStartParam*)vparam;
-		unsigned retval = param->self->threadMain(param->prepare, param->stop, param->param);
+		unsigned retval = param->self_->threadMain(param->prepare, param->stop, param->param);
 		_endthreadex(retval);
 		return retval;
 	}
@@ -86,6 +87,7 @@ private:
 	}
 };
 
+#if 0
 template <class T>
 class SimpleThreadWithMessageWindow : public SimpleThreadBase<T> {
 public:
@@ -161,5 +163,6 @@ private:
 		return NULL;
 	}
 };
+#endif
 
 #endif
