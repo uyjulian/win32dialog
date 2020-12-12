@@ -1,39 +1,12 @@
 
-CC = i686-w64-mingw32-gcc
-CXX = i686-w64-mingw32-g++
-GIT_TAG := $(shell git rev-parse --short HEAD)
-CFLAGS += -Ofast -march=ivybridge -mfpmath=sse -flto
-CFLAGS += -Wall -Wno-unused-value -Wno-format -fpermissive -I. -I.. -I../ncbind -DGIT_TAG=L\"$(GIT_TAG)\" -DNDEBUG -DWIN32 -D_WIN32 -D_WINDOWS 
-CFLAGS += -D_USRDLL -DMINGW_HAS_SECURE_API -DUNICODE -D_UNICODE -DNO_STRICT
-LDFLAGS += -static -static-libstdc++ -static-libgcc -shared -Wl,--kill-at
-LDLIBS += -lodbc32 -lodbccp32 -luuid -lgdi32 -lcomctl32 -lcomdlg32
+SOURCES += main.cpp
 
-%.o: %.c
-	@printf '\t%s %s\n' CC $<
-	$(CC) -c $(CFLAGS) -o $@ $<
+LDLIBS += -lgdi32 -lcomctl32 -lcomdlg32
 
-%.o: %.cpp
-	@printf '\t%s %s\n' CXX $<
-	$(CXX) -c $(CFLAGS) -o $@ $<
+CFLAGS += -DWINVER=0x0600 -D_WIN32_WINNT=0x0600
 
-SOURCES := ../tp_stub.cpp ../ncbind/ncbind.cpp main.cpp
-OBJECTS := $(SOURCES:.c=.o)
-OBJECTS := $(OBJECTS:.cpp=.o)
+PROJECT_BASENAME = win32dialog
 
-BINARY ?= win32dialog.dll
-ARCHIVE ?= win32dialog.$(GIT_TAG).7z
+RC_LEGALCOPYRIGHT ?= Copyright (C) 2010-2016 Go Watanabe; Copyright (C) 2008-2015 miahmie; Copyright (C) 2013 kiyobee; Copyright (C) 2019-2020 Julian Uy; See details of license at license.txt, or the source code location.
 
-all: $(BINARY)
-
-archive: $(ARCHIVE)
-
-clean:
-	rm -f $(OBJECTS) $(BINARY) $(ARCHIVE)
-
-$(ARCHIVE): $(BINARY) 
-	rm -f $(ARCHIVE)
-	7z a $@ $^
-
-$(BINARY): $(OBJECTS) 
-	@printf '\t%s %s\n' LNK $@
-	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+include external/ncbind/Rules.lib.make
