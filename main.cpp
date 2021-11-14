@@ -154,6 +154,7 @@ struct NotifyAccessor {
 	inline BYTE  GetByte( int ofs) const { return ptr[ofs]; }
 	inline WORD  GetWord( int ofs) const { return ( WORD)GetByte(ofs) | ((( WORD)GetByte(ofs+1))<<8);  }
 	inline DWORD GetDWord(int ofs) const { return (DWORD)GetWord(ofs) | (((DWORD)GetWord(ofs+2))<<16); }
+	inline tTVInteger GetULongPtr(int ofs) const { if (sizeof(ULONG_PTR) == 8) return ((ULONG_PTR)GetDWord(ofs) | (((ULONG_PTR)GetDWord(ofs+4))<<32)); else GetDWord(ofs); }
 private:
 	BYTE const *ptr;
 	NMHDR const* ref;
@@ -168,12 +169,14 @@ struct Blob {
 	inline BYTE  GetByte( int ofs) const { return ptr[ofs]; }
 	inline WORD  GetWord( int ofs) const { return ( WORD)GetByte(ofs) | ((( WORD)GetByte(ofs+1))<<8);  }
 	inline DWORD GetDWord(int ofs) const { return (DWORD)GetWord(ofs) | (((DWORD)GetWord(ofs+2))<<16); }
+	inline tTVInteger GetULongPtr(int ofs) const { if (sizeof(ULONG_PTR) == 8) return ((ULONG_PTR)GetDWord(ofs) | (((ULONG_PTR)GetDWord(ofs+4))<<32)); else GetDWord(ofs); }
 	inline void  SetByte( int ofs, BYTE  v) { ptr[ofs] = v; }
 	inline void  SetWord( int ofs, WORD  v) { SetByte(ofs, (BYTE)v); SetByte(ofs+1, (BYTE)(v>>8));  }
 	inline void  SetDWord(int ofs, DWORD v) { SetWord(ofs, (WORD)v); SetWord(ofs+2, (WORD)(v>>16)); }
-	ttstr GetText(int ofs) const { return (tjs_char*)GetDWord(ofs); }
-	void  SetText(int ofs, tjs_char const *text) { SetDWord(ofs, (DWORD)text); }
-	static Blob* ReferPointer(DWORD ptr) { return new Blob((BYTE*)ptr); }
+	inline void  SetULongPtr(int ofs, tTVInteger v) { if (sizeof(ULONG_PTR) == 8) { SetDWord(ofs, (DWORD)v); SetDWord(ofs+4, (DWORD)(v>>32)); } else SetDWord(ofs, v); }
+	ttstr GetText(int ofs) const { return (tjs_char*)GetULongPtr(ofs); }
+	void  SetText(int ofs, tjs_char const *text) { SetULongPtr(ofs, (ULONG_PTR)text); }
+	static Blob* ReferPointer(tTVInteger ptr) { return new Blob((BYTE*)(ULONG_PTR)ptr); }
 private:
 	BYTE *ptr;
 	DWORD size;
@@ -419,6 +422,15 @@ public:
 	long SetItemLong(int id, int index, long newlong) {
 		HWND hwnd = GetItemHWND(id);
 		long r = SetWindowLong(hwnd, index, newlong);
+		// スタイル変更の反映
+		if (!id && (index == GWL_STYLE || GWL_EXSTYLE))
+			SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER|SWP_FRAMECHANGED);
+		return r;
+	}
+	LONG_PTR GetItemLongPtr(int id, int index) { return GetWindowLongPtr(GetItemHWND(id), index); }
+	LONG_PTR SetItemLongPtr(int id, int index, LONG_PTR newlong) {
+		HWND hwnd = GetItemHWND(id);
+		LONG_PTR r = SetWindowLongPtr(hwnd, index, newlong);
 		// スタイル変更の反映
 		if (!id && (index == GWL_STYLE || GWL_EXSTYLE))
 			SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER|SWP_FRAMECHANGED);
@@ -690,7 +702,7 @@ public:
 		WIN32Dialog *inst;
 		switch (msg) {
 		case WM_INITDIALOG:
-			SetWindowLong(hwnd, DWL_USER, (LONG)lparam);
+			SetWindowLongPtr(hwnd, DWLP_USER, (LONG_PTR)lparam);
 			inst = (WIN32Dialog *)lparam;
 			if (inst) {
 				inst->dialogHWnd = hwnd;
@@ -708,15 +720,15 @@ public:
 		case WM_VSCROLL: return NormalCallback(TJS_W("onVScroll"), hwnd, msg, wparam, lparam);
 		case WM_COMMAND: return NormalCallback(TJS_W("onCommand"), hwnd, msg, wparam, lparam);
 		case WM_DRAWITEM:
-			if ((inst = (WIN32Dialog *)GetWindowLong(hwnd, DWL_USER)) != 0)
+			if ((inst = (WIN32Dialog *)GetWindowLongPtr(hwnd, DWLP_USER)) != 0)
 				return inst->callback(TJS_W("onDrawItem"), wparam, (DRAWITEMSTRUCT*)lparam);
 			break;
 		case WM_NOTIFY:
-			if ((inst = (WIN32Dialog *)GetWindowLong(hwnd, DWL_USER)) != 0)
+			if ((inst = (WIN32Dialog *)GetWindowLongPtr(hwnd, DWLP_USER)) != 0)
 				return inst->callback(TJS_W("onNotify"), wparam, (NMHDR*)lparam);
 			break;
 		case WM_DESTROY:
-			if ((inst = (WIN32Dialog *)GetWindowLong(hwnd, DWL_USER)) != 0 && inst->hHook != NULL)
+			if ((inst = (WIN32Dialog *)GetWindowLongPtr(hwnd, DWLP_USER)) != 0 && inst->hHook != NULL)
 				UnhookWindowsHookEx(inst->hHook);
 			return FALSE;
 		case WM_CTLCOLORBTN:
@@ -724,7 +736,7 @@ public:
 		case WM_CTLCOLORSTATIC:
 //		case WM_CTLCOLORLISTBOX:
 //		case WM_CTLCOLORSCROLLBAR:
-			if ((inst = (WIN32Dialog *)GetWindowLong(hwnd, DWL_USER)) != 0) {
+			if ((inst = (WIN32Dialog *)GetWindowLongPtr(hwnd, DWLP_USER)) != 0) {
 				int id = GetDlgCtrlID((HWND)lparam);
 				tjs_char *event = NULL;
 				switch (msg) {
@@ -741,7 +753,7 @@ public:
 		return FALSE;
 	}
 	static LRESULT NormalCallback(NameT cbn, HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
-		WIN32Dialog *inst = (WIN32Dialog *)GetWindowLong(hwnd, DWL_USER);
+		WIN32Dialog *inst = (WIN32Dialog *)GetWindowLongPtr(hwnd, DWLP_USER);
 		return (inst != 0) ? inst->callback(cbn, msg, wparam, lparam) : FALSE;
 	}
 	static LRESULT FAR PASCAL GetMsgProc(int ncode, WPARAM wparam, LPARAM lparam) {
@@ -750,7 +762,7 @@ public:
 		if (ncode >= 0 && PM_REMOVE == wparam) {
 			if ((lpmsg->message >= WM_KEYFIRST && lpmsg->message <= WM_KEYLAST)) {
 				HWND parentHWnd = GetParent(lpmsg->hwnd);
-				if ((inst = (WIN32Dialog *)GetWindowLong(parentHWnd, DWL_USER)) != 0) {
+				if ((inst = (WIN32Dialog *)GetWindowLongPtr(parentHWnd, DWLP_USER)) != 0) {
 					if(inst->modeless) {
 						if (IsDialogMessage(parentHWnd, lpmsg)) {
 							lpmsg->message	= WM_NULL;
@@ -761,7 +773,7 @@ public:
 				}
 			}
 		}
-		if ((inst = (WIN32Dialog *)GetWindowLong(GetParent(lpmsg->hwnd), DWL_USER)) != 0)
+		if ((inst = (WIN32Dialog *)GetWindowLongPtr(GetParent(lpmsg->hwnd), DWLP_USER)) != 0)
 			return CallNextHookEx(inst->hHook, ncode, wparam, lparam);
 		return 0;
 	}
@@ -842,8 +854,8 @@ public:
 		return -1;
 	}
 
-	void setMessageResult(LONG result) {
-		if (IsValid()) SetWindowLong(dialogHWnd, DWL_MSGRESULT, result);
+	void setMessageResult(LONG_PTR result) {
+		if (IsValid()) SetWindowLongPtr(dialogHWnd, DWLP_MSGRESULT, result);
 	}
 
 	static tjs_int64  OpenPropertySheet(VarT win, VarT vpages, VarT velm) {
@@ -1508,9 +1520,9 @@ private:
 	static LRESULT CALLBACK ProgressProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 		switch (msg) {
 		case WM_INITDIALOG:
-			::SetWindowLong(hwnd, DWL_USER, (LONG)lparam);
+			::SetWindowLongPtr(hwnd, DWLP_USER, (LONG_PTR)lparam);
 			{
-				Progress* self = (Progress*)::GetWindowLong(hwnd, DWL_USER);
+				Progress* self = (Progress*)::GetWindowLongPtr(hwnd, DWLP_USER);
 				if (self) self->onInit(hwnd);
 			}
 			return TRUE;
@@ -1518,14 +1530,14 @@ private:
 			if (LOWORD(wparam) == IDCANCEL &&
 				HIWORD(wparam) == BN_CLICKED)
 			{
-				Progress* self = (Progress*)::GetWindowLong(hwnd, DWL_USER);
+				Progress* self = (Progress*)::GetWindowLongPtr(hwnd, DWLP_USER);
 				if (self) self->onCancel();
 				return TRUE;
 			}
 			break;
 		case WM_CLOSE:
 			{
-				Progress* self = (Progress*)::GetWindowLong(hwnd, DWL_USER);
+				Progress* self = (Progress*)::GetWindowLongPtr(hwnd, DWLP_USER);
 				if (self) self->onCancel();
 			}
 			::DestroyWindow(hwnd);
@@ -1620,7 +1632,7 @@ void WIN32Dialog::setProgressCanceled(bool b)        { checkProgress();    if (p
 
 // -------------------------------------------------------------
 
-#define ENUM(n) Variant(#n, (long)n, 0)
+#define ENUM(n) Variant(#n, (tjs_int64)(n), 0)
 
 NCB_REGISTER_SUBCLASS(Header) {
 	Constructor();
@@ -1659,6 +1671,7 @@ NCB_REGISTER_SUBCLASS(NotifyAccessor) {
 	Method(TJS_W("getByte"),  &Class::GetByte);
 	Method(TJS_W("getWord"),  &Class::GetWord);
 	Method(TJS_W("getDWord"), &Class::GetDWord);
+	Method(TJS_W("getULongPtr"), &Class::GetULongPtr);
 }
 
 NCB_REGISTER_SUBCLASS(Blob) {
@@ -1671,6 +1684,7 @@ NCB_REGISTER_SUBCLASS(Blob) {
 	Method(TJS_W("setByte"),   &Class::SetByte);
 	Method(TJS_W("setWord"),   &Class::SetWord);
 	Method(TJS_W("setDWord"),  &Class::SetDWord);
+	Method(TJS_W("setULongPtr"),  &Class::SetULongPtr);
 	Method(TJS_W("setText"),   &Class::SetText);
 
 	Method(TJS_W("ReferPointer"), &Class::ReferPointer);
@@ -1697,6 +1711,8 @@ NCB_REGISTER_CLASS(WIN32Dialog) {
 	Method(TJS_W("getItemClassName"),&Class::GetItemClassName);
 	Method(TJS_W("setItemLong"),     &Class::SetItemLong);
 	Method(TJS_W("getItemLong"),     &Class::GetItemLong);
+	Method(TJS_W("setItemLongPtr"),  &Class::SetItemLongPtr);
+	Method(TJS_W("getItemLongPtr"),  &Class::GetItemLongPtr);
 	Method(TJS_W("setItemInt"),      &Class::SetItemInt);
 	Method(TJS_W("getItemInt"),      &Class::GetItemInt);
 	Method(TJS_W("setItemText"),     &Class::SetItemText);
@@ -1756,18 +1772,36 @@ NCB_REGISTER_CLASS(WIN32Dialog) {
 
 	// Window Long index
 	ENUM(GWL_STYLE);
+#ifndef _WIN64
 	ENUM(GWL_WNDPROC);
 	ENUM(GWL_HINSTANCE);
 	ENUM(GWL_HWNDPARENT);
+#endif
 	ENUM(GWL_STYLE);
 	ENUM(GWL_EXSTYLE);
+#ifndef _WIN64
 	ENUM(GWL_USERDATA);
+#endif
 	ENUM(GWL_ID);
 
+	// Window Long Pointer index
+	ENUM(GWLP_WNDPROC);
+	ENUM(GWLP_HINSTANCE);
+	ENUM(GWLP_HWNDPARENT);
+	ENUM(GWLP_USERDATA);
+	ENUM(GWLP_ID);
+
+#ifndef _WIN64
 	// Dialog Long index
 	ENUM(DWL_DLGPROC);
 	ENUM(DWL_MSGRESULT);
 	ENUM(DWL_USER);
+#endif
+
+	// Dialog Long Pointer index
+	ENUM(DWLP_DLGPROC);
+	ENUM(DWLP_MSGRESULT);
+	ENUM(DWLP_USER);
 
 	// Window Styles
 	ENUM(WS_OVERLAPPED);
@@ -2921,8 +2955,8 @@ NCB_REGISTER_CLASS(WIN32Dialog) {
 	ENUM(TCN_FOCUSCHANGE);
 
 	// sizeof item structs
-	Variant(TJS_W("SIZEOF_TC_ITEMHEADER"), sizeof(TC_ITEMHEADERW), 0);
-	Variant(TJS_W("SIZEOF_TC_ITEM"),       sizeof(TC_ITEMW), 0);
+	Variant(TJS_W("SIZEOF_TC_ITEMHEADER"), (tTVInteger)sizeof(TC_ITEMHEADERW), 0);
+	Variant(TJS_W("SIZEOF_TC_ITEM"),       (tTVInteger)sizeof(TC_ITEMW), 0);
 
 
 	////////////////

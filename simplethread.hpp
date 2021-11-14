@@ -132,7 +132,7 @@ private:
 
 	static LRESULT WINAPI MsgWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
 		if (msg >= WM_APP && msg < 0xC000) {
-			SimpleThreadBase *self = (SimpleThreadBase*)(::GetWindowLong(hwnd, GWL_USERDATA));
+			SimpleThreadBase *self = (SimpleThreadBase*)(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
 			if (self) return self->onMessage(msg, wp, lp);
 		}
 		return DefWindowProc(hwnd, msg, wp, lp);
@@ -151,13 +151,13 @@ private:
 		HWND hwnd = ::CreateWindowExW(0, (LPCWSTR)MAKELONG(MessageWindowClass(), 0), windowName,
 									  0, 0, 0, 1, 1, HWND_MESSAGE, NULL, hinst, NULL);
 		if (!hwnd) TVPThrowExceptionMessage((ttstr(TJS_W("create message window failed: "))+windowName).c_str());
-		::SetWindowLong(hwnd, GWL_USERDATA, (LONG)this);
+		::SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)this);
 		return hwnd;
 	}
 
 	HWND destroyMessageWindow(HWND hwnd) {
 		if (hwnd) {
-			::SetWindowLong(hwnd, GWL_USERDATA, 0);
+			::SetWindowLongPtr(hwnd, GWLP_USERDATA, 0);
 			::DestroyWindow(hwnd);
 		}
 		return NULL;
