@@ -1053,7 +1053,7 @@ public:
 			dict.SetValue(TJS_W("page"), si.nPage);
 			dict.SetValue(TJS_W("trackpos"), si.nTrackPos);
 		}
-		VarT	var	= dict;
+		VarT	var	= (iTJSDispatch2*)dict;
 		return var;
 	}
 
