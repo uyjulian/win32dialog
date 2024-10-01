@@ -1038,8 +1038,8 @@ public:
 		return TJS_S_OK;
 	}
 	VarT	getScrollInfo(int id) {
-		DictT*	dict = new DictT;
-		if(dict->IsValid()) {
+		DictT	dict;
+		if(dict.IsValid()) {
 			HWND		hscr	= GetItemHWND(id);
 			SCROLLINFO	si;
 			ZeroMemory(&si, sizeof(SCROLLINFO));
@@ -1047,14 +1047,13 @@ public:
 			si.fMask	= SIF_ALL;
 			GetScrollInfo(hscr, SB_CTL, &si);
 
-			dict->SetValue(TJS_W("pos"), si.nPos);
-			dict->SetValue(TJS_W("min"), si.nMin);
-			dict->SetValue(TJS_W("max"), si.nMax);
-			dict->SetValue(TJS_W("page"), si.nPage);
-			dict->SetValue(TJS_W("trackpos"), si.nTrackPos);
+			dict.SetValue(TJS_W("pos"), si.nPos);
+			dict.SetValue(TJS_W("min"), si.nMin);
+			dict.SetValue(TJS_W("max"), si.nMax);
+			dict.SetValue(TJS_W("page"), si.nPage);
+			dict.SetValue(TJS_W("trackpos"), si.nTrackPos);
 		}
 		VarT	var	= dict;
-		delete dict;
 		return var;
 	}
 
@@ -1680,6 +1679,7 @@ NCB_REGISTER_SUBCLASS(Blob) {
 	Method(TJS_W("getByte"),   &Class::GetByte);
 	Method(TJS_W("getWord"),   &Class::GetWord);
 	Method(TJS_W("getDWord"),  &Class::GetDWord);
+	Method(TJS_W("getULongPtr"), &Class::GetULongPtr);
 	Method(TJS_W("getText"),   &Class::GetText);
 	Method(TJS_W("setByte"),   &Class::SetByte);
 	Method(TJS_W("setWord"),   &Class::SetWord);
@@ -1797,11 +1797,6 @@ NCB_REGISTER_CLASS(WIN32Dialog) {
 	ENUM(DWL_MSGRESULT);
 	ENUM(DWL_USER);
 #endif
-
-	// Dialog Long Pointer index
-	ENUM(DWLP_DLGPROC);
-	ENUM(DWLP_MSGRESULT);
-	ENUM(DWLP_USER);
 
 	// Window Styles
 	ENUM(WS_OVERLAPPED);
