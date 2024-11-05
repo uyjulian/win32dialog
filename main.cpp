@@ -40,7 +40,7 @@ struct Bitmap {
 		tjs_int bmpw = obj.getIntValue(TJS_W("imageWidth"));
 		tjs_int bmph = obj.getIntValue(TJS_W("imageHeight"));
 		tjs_int ln   = obj.getIntValue(TJS_W("mainImageBufferPitch"));
-		PIX *pw, *pr = reinterpret_cast<PIX*>(obj.getIntValue(TJS_W("mainImageBuffer")));
+		PIX *pw, *pr = reinterpret_cast<PIX*>(obj.getIntPtrValue(TJS_W("mainImageBuffer")));
 
 
 		BITMAPV5HEADER bh;
@@ -285,7 +285,7 @@ public:
 		tTJSVariant vwp((tjs_int32)wparam), vnm;
 		// ボックス化
 		ncbNativeObjectBoxing::Boxing box;
-		box.operator()<NotifyAccessor&> (vnm, acc, ncbTypedefs::Tag<NotifyAccessor&>());
+		box.operator()<NotifyAccessor> (vnm, acc, ncbTypedefs::Tag<NotifyAccessor>());
 
 		tTJSVariant *params[] = { &vwp, &vnm };
 		return callback(event, 2, params);
@@ -296,7 +296,7 @@ public:
 		tTJSVariant vwp((tjs_int32)wparam), vdi;
 		// ボックス化
 		ncbNativeObjectBoxing::Boxing box;
-		box.operator()<DrawItem&> (vdi, diwrap, ncbTypedefs::Tag<DrawItem&>());
+		box.operator()<DrawItem> (vdi, diwrap, ncbTypedefs::Tag<DrawItem>());
 
 		tTJSVariant *params[] = { &vwp, &vdi };
 		return callback(event, 2, params);
@@ -1764,9 +1764,10 @@ NCB_REGISTER_CLASS(WIN32Dialog) {
 	ENUM(GWL_ID);
 
 	// Dialog Long index
-	ENUM(DWLP_DLGPROC);
-	ENUM(DWLP_MSGRESULT);
-	ENUM(DWLP_USER);
+	//XXX 64bitでエラー。いったんコメントアウト
+	//ENUM(DWLP_DLGPROC);
+	//ENUM(DWLP_MSGRESULT);
+	//ENUM(DWLP_USER);
 
 	// Window Styles
 	ENUM(WS_OVERLAPPED);
@@ -2920,8 +2921,9 @@ NCB_REGISTER_CLASS(WIN32Dialog) {
 	ENUM(TCN_FOCUSCHANGE);
 
 	// sizeof item structs
-	Variant(TJS_W("SIZEOF_TC_ITEMHEADER"), sizeof(TC_ITEMHEADERW), 0);
-	Variant(TJS_W("SIZEOF_TC_ITEM"),       sizeof(TC_ITEMW), 0);
+	// XXX 64bitでエラー。いったんコメントアウト
+	//Variant(TJS_W("SIZEOF_TC_ITEMHEADER"), sizeof(TC_ITEMHEADERW), 0);
+	//Variant(TJS_W("SIZEOF_TC_ITEM"),       sizeof(TC_ITEMW), 0);
 
 
 	////////////////
