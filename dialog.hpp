@@ -55,7 +55,7 @@ struct DialogTemplate {
 			ULONG_PTR n = al-1;
 			p = (BYTE*) (((ULONG_PTR)p + n) & ~n);
 #else
-			ULONG n = al-1;
+			ULONGLONG n = al-1;
 			p = (BYTE*) ((intptr_t)(p + n) & ~n);
 #endif
 		}

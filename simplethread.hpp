@@ -148,10 +148,10 @@ private:
 			if (!(MessageWindowClass(false, ::RegisterClassExW(&wcex))))
 				TVPThrowExceptionMessage((ttstr(TJS_W("register window class failed: "))+className).c_str());
 		}
-		HWND hwnd = ::CreateWindowExW(0, (LPCWSTR)MAKELONG(MessageWindowClass(), 0), windowName,
+		HWND hwnd = ::CreateWindowExW(0, (LPCWSTR)MessageWindowClass(), windowName,
 									  0, 0, 0, 1, 1, HWND_MESSAGE, NULL, hinst, NULL);
 		if (!hwnd) TVPThrowExceptionMessage((ttstr(TJS_W("create message window failed: "))+windowName).c_str());
-		::SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)this);
+		::SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)(tjs_intptr_t)this);
 		return hwnd;
 	}
 
