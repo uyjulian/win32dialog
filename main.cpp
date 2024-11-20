@@ -389,7 +389,7 @@ public:
 	// テンプレート作成
 	static tjs_error TJS_INTF_METHOD makeTemplate(VarT *result, tjs_int numparams, VarT **param, WIN32Dialog *self);
 
-	bool IsValid() const { return dialogHWnd != 0; }
+	bool IsValid() const { return dialogHWnd != 0 && ::IsWindow(dialogHWnd) ; }
 	void checkDialogValid() const {
 		if (!IsValid()) TVPThrowExceptionMessage(TJS_W("Dialog not opened."));
 	}
