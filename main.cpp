@@ -173,14 +173,22 @@ struct Blob {
 	inline BYTE  GetByte( int ofs) const { return ptr[ofs]; }
 	inline WORD  GetWord( int ofs) const { return ( WORD)GetByte(ofs) | ((( WORD)GetByte(ofs+1))<<8);  }
 	inline DWORD GetDWord(int ofs) const { return (DWORD)GetWord(ofs) | (((DWORD)GetWord(ofs+2))<<16); }
+	inline tjs_int64 GetDWordLong(int ofs) const { return ((DWORDLONG)GetDWord(ofs) | (((DWORDLONG)GetDWord(ofs+4))<<32)); }
 	inline tTVInteger GetULongPtr(int ofs) const { if (sizeof(ULONG_PTR) == 8) return ((ULONG_PTR)GetDWord(ofs) | (((ULONG_PTR)GetDWord(ofs+4))<<32)); else GetDWord(ofs); }
 	inline void  SetByte( int ofs, BYTE  v) { ptr[ofs] = v; }
 	inline void  SetWord( int ofs, WORD  v) { SetByte(ofs, (BYTE)v); SetByte(ofs+1, (BYTE)(v>>8));  }
 	inline void  SetDWord(int ofs, DWORD v) { SetWord(ofs, (WORD)v); SetWord(ofs+2, (WORD)(v>>16)); }
+	inline void  SetDWordLong(int ofs, tjs_int64 v) { SetDWord(ofs, (DWORD)v); SetDWord(ofs+4, (DWORD)(v>>32)); }
 	inline void  SetULongPtr(int ofs, tTVInteger v) { if (sizeof(ULONG_PTR) == 8) { SetDWord(ofs, (DWORD)v); SetDWord(ofs+4, (DWORD)(v>>32)); } else SetDWord(ofs, v); }
-	ttstr GetText(int ofs) const { return (tjs_char*)GetULongPtr(ofs); }
-	void  SetText(int ofs, tjs_char const *text) { SetULongPtr(ofs, (ULONG_PTR)text); }
-	static Blob* ReferPointer(tTVInteger ptr) { return new Blob((BYTE*)(ULONG_PTR)ptr); }
+#ifndef _WIN64
+	ttstr GetText(int ofs) const { return (tjs_char*)GetDWord(ofs); }
+	void  SetText(int ofs, tjs_char const *text) { SetDWord(ofs, (DWORD)text); }
+	static Blob* ReferPointer(DWORD ptr) { return new Blob((BYTE*)ptr); }
+#else // ! _WIN64
+	ttstr GetText(int ofs) const { return (tjs_char*)GetDWordLong(ofs); }
+	void  SetText(int ofs, tjs_char const *text) { SetDWordLong(ofs, (DWORDLONG)text); }
+	static Blob* ReferPointer(tjs_int64 ptr) { return new Blob((BYTE*)ptr); }
+#endif // ! _WIN64
 private:
 	BYTE *ptr;
 	DWORD size;
@@ -384,7 +392,7 @@ public:
 	// テンプレート作成
 	static tjs_error TJS_INTF_METHOD makeTemplate(VarT *result, tjs_int numparams, VarT **param, WIN32Dialog *self);
 
-	bool IsValid() const { return dialogHWnd != 0; }
+	bool IsValid() const { return dialogHWnd != 0 && ::IsWindow(dialogHWnd) ; }
 	void checkDialogValid() const {
 		if (!IsValid()) TVPThrowExceptionMessage(TJS_W("Dialog not opened."));
 	}
@@ -1684,11 +1692,13 @@ NCB_REGISTER_SUBCLASS(Blob) {
 	Method(TJS_W("getWord"),   &Class::GetWord);
 	Method(TJS_W("getDWord"),  &Class::GetDWord);
 	Method(TJS_W("getULongPtr"), &Class::GetULongPtr);
+	Method(TJS_W("getDWordLong"),  &Class::GetDWordLong);
 	Method(TJS_W("getText"),   &Class::GetText);
 	Method(TJS_W("setByte"),   &Class::SetByte);
 	Method(TJS_W("setWord"),   &Class::SetWord);
 	Method(TJS_W("setDWord"),  &Class::SetDWord);
 	Method(TJS_W("setULongPtr"),  &Class::SetULongPtr);
+	Method(TJS_W("setDWordLong"),  &Class::SetDWordLong);
 	Method(TJS_W("setText"),   &Class::SetText);
 
 	Method(TJS_W("ReferPointer"), &Class::ReferPointer);
