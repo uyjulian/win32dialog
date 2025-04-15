@@ -11,7 +11,7 @@ public:
 	typedef std::vector<HANDLE> EventArray;
 
 	struct ThreadStartParam {
-		SimpleThreadBase *self_;
+		SimpleThreadBase *self;
 		HANDLE prepare, stop;
 		T param;
 	};
@@ -74,7 +74,7 @@ protected:
 private:
 	static unsigned __stdcall threadFunc(void *vparam) {
 		ThreadStartParam *param = (ThreadStartParam*)vparam;
-		unsigned retval = param->self_->threadMain(param->prepare, param->stop, param->param);
+		unsigned retval = param->self->threadMain(param->prepare, param->stop, param->param);
 		_endthreadex(retval);
 		return retval;
 	}
