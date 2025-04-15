@@ -509,7 +509,7 @@ public:
 		int id = (int)param[0]->AsInteger();
 		Bitmap *bmp = BitmapAdaptorT::GetNativeInstance(param[1]->AsObjectNoAddRef(), true);
 		if (bmp != NULL)
-			*result = tTJSVariant((tjs_int32)self->_sendItemMessage(id, STM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)bmp->createBitmap(self->dialogHWnd)));
+			*result = tTJSVariant((tTVInteger)(tjs_intptr_t)self->_sendItemMessage(id, STM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)bmp->createBitmap(self->dialogHWnd)));
 		return  TJS_S_OK;
 	}
 
@@ -1652,7 +1652,7 @@ void WIN32Dialog::setProgressCanceled(bool b)        { checkProgress();    if (p
 
 // -------------------------------------------------------------
 
-#define ENUM(n) Variant(#n, (tjs_int64)(n), 0)
+#define ENUM(n) Variant(#n, (tTVInteger)(n), 0)
 
 NCB_REGISTER_SUBCLASS(Header) {
 	Constructor();
