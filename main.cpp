@@ -513,8 +513,9 @@ public:
 		return  TJS_S_OK;
 	}
 
-	void SetPos(int x,  int y) { if (dialogHWnd) SetWindowPos(dialogHWnd, 0, x, y, 0, 0, SWP_NOSIZE|SWP_NOZORDER); }
-	void SetSize(int w, int h) { if (dialogHWnd) SetWindowPos(dialogHWnd, 0, 0, 0, w, h, SWP_NOMOVE|SWP_NOZORDER); }
+	void SetPos(int x,  int y) { if (dialogHWnd) SetWindowPos(dialogHWnd, 0, x, y, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE); }
+	void SetSize(int w, int h) { if (dialogHWnd) SetWindowPos(dialogHWnd, 0, 0, 0, w, h, SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE); }
+	void SetActive()           { if (dialogHWnd) SetWindowPos(dialogHWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE|SWP_NOMOVE|SWP_SHOWWINDOW); }
 
 #define GetDialogSize(rect, result) \
 	if (!dialogHWnd) return 0; \
@@ -554,15 +555,22 @@ public:
 		int id   = (int)param[0]->AsInteger();
 		UINT msg = (UINT)param[1]->AsInteger();
 		WPARAM wp = (numparams > 2) ? (WPARAM)param[2]->AsInteger() : 0;
-		LPARAM lp = (numparams > 3) ? ((param[3]->Type() == tvtString) ? (LPARAM)param[3]->GetString() : (LPARAM)param[3]->AsInteger()) : 0;
-		*result = tTJSVariant((tjs_int32)self->_sendItemMessage(id, msg, wp, lp));
+		bool isstr = (numparams > 3) && (param[3]->Type() == tvtString);
+		LPARAM lp = (numparams > 3) ? (isstr ? (LPARAM)param[3]->GetString() : (LPARAM)param[3]->AsInteger()) : 0;
+		*result = tTJSVariant((tTVInteger)(tjs_intptr_t)self->_sendItemMessage(id, msg, wp, lp, isstr));
 		return  TJS_S_OK;
 	}
 protected:
-	LRESULT _sendItemMessage(int id, UINT msg, WPARAM wparam, LPARAM lparam) {
+	LRESULT _sendItemMessage(int id, UINT msg, WPARAM wparam, LPARAM lparam, bool isstr = false) {
 		checkDialogValid();
-		return id ? SendDlgItemMessage(dialogHWnd, id, msg, wparam, lparam)
-			:       SendMessage       (dialogHWnd,     msg, wparam, lparam); // [XXX]自分自身を操作するためにid==0でdialogHWndへメッセージ
+		if (!isstr) {
+			return id ? SendDlgItemMessage(dialogHWnd, id, msg, wparam, lparam)
+				:       SendMessage       (dialogHWnd,     msg, wparam, lparam); // [XXX]自分自身を操作するためにid==0でdialogHWndへメッセージ
+		} else {
+			// [XXX] SendMessageW 利用
+			return id ? ::SendDlgItemMessageW(dialogHWnd, id, msg, wparam, lparam)
+				:       ::SendMessageW       (dialogHWnd,     msg, wparam, lparam);
+		}
 	}
 
 	// TJS辞書⇒RECTへ値をコピー
@@ -1014,7 +1022,7 @@ public:
 	bool           getProgressCanceled() const;
 	void           setProgressCanceled(bool);
 	static tjs_error TJS_INTF_METHOD openProgress(VarT *result, tjs_int num, VarT **param, iTJSDispatch2 *objthis);
-	bool _openProgress(iTJSDispatch2*, VarT const&, int, bool, bool);
+	bool _openProgress(iTJSDispatch2*, VarT const&, int, bool, bool, bool);
 	void closeProgress();
 	bool isProgress() const { return progress != 0; }
 	void checkProgress() const { if (!isProgress()) TVPThrowExceptionMessage(TJS_W("dialog is not progress mode.")); }
@@ -1585,23 +1593,24 @@ private:
 };
 
 tjs_error TJS_INTF_METHOD
-WIN32Dialog::openProgress(VarT *result, tjs_int num, VarT **param, iTJSDispatch2 *objthis)
+WIN32Dialog::openProgress(VarT *result, tjs_int numparams, VarT **param, iTJSDispatch2 *objthis)
 {
-	if (num < 1) return TJS_E_BADPARAMCOUNT;
+	if (numparams < 1) return TJS_E_BADPARAMCOUNT;
 	WIN32Dialog *self = SelfAdaptorT::GetNativeInstance(objthis); 
 	if (!self) return TJS_E_NATIVECLASSCRASH;
-	bool defdsapp = !(num>=2 && param[0]->Type() == tvtObject);
+	bool defdsapp = !(numparams>=2 && param[1]->Type() == tvtObject);
 	bool succeeded = self->_openProgress
 		(   objthis,
-			(num >= 2 ? *param[1] : VarT()),
+			(numparams >= 2 ? *param[1] : VarT()),
 			(int)param[0]->AsInteger(),
-			(num >= 3 ? param[2]->operator bool() :  defdsapp),
-			(num >= 4 ? param[3]->operator bool() : !defdsapp)
+			(TJS_PARAM_EXIST(2) ? param[2]->operator bool() :  defdsapp),
+			(TJS_PARAM_EXIST(3) ? param[3]->operator bool() : !defdsapp),
+			(TJS_PARAM_EXIST(4) ? param[4]->operator bool() : true)
 			);
 	if (result) *result = succeeded;
 	return  TJS_S_OK;
 }
-bool WIN32Dialog::_openProgress(iTJSDispatch2 *objthis, VarT const &win, int prgid, bool appDisable, bool breathe) {
+bool WIN32Dialog::_openProgress(iTJSDispatch2 *objthis, VarT const &win, int prgid, bool appDisable, bool breathe, bool activate) {
 	bool ret = false;
 	if (IsValid() || propsheet || progress)
 		TVPThrowExceptionMessage(TJS_W("dialog already used."));
@@ -1619,7 +1628,7 @@ bool WIN32Dialog::_openProgress(iTJSDispatch2 *objthis, VarT const &win, int prg
 		if (dialogHWnd) {
 			this->objthis = objthis;
 			callback(TJS_W("onInit"), WM_INITDIALOG, 0, 0);
-			::ShowWindow(dialogHWnd, SW_SHOW);
+			::ShowWindow(dialogHWnd, activate ? SW_SHOW : SW_SHOWNA);
 			ret = true;
 		} else {
 			delete progress;
@@ -1754,6 +1763,7 @@ NCB_REGISTER_CLASS(WIN32Dialog) {
 
 	Method(TJS_W("setPos"),          &Class::SetPos);
 	Method(TJS_W("setSize"),         &Class::SetSize);
+	Method(TJS_W("setActive"),       &Class::SetActive);
 	Property(TJS_W("left"),          &Class::GetLeft,   (int)0);
 	Property(TJS_W("top"),           &Class::GetTop,    (int)0);
 	Property(TJS_W("width"),         &Class::GetWidth,  (int)0);

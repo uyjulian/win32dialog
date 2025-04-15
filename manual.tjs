@@ -192,6 +192,12 @@ class WIN32Dialog {
 	function setSize(w, h);
 
 	/**
+	 * ダイアログをアクティブにする
+	 * @description このメソッドを追加する前のバージョンでは setPos/setSize でアクティブ化していた問題があったので留意のこと（現在はアクティブ化しない）
+	 */
+	function setActive();
+
+	/**
 	 * ダイアログサイズの取得
 	 * @description 読み取り専用。サイズの変更はできないので注意
 	 */
@@ -348,13 +354,14 @@ class WIN32Dialog {
 	 * @param window  [optional] オーナーwindow (void=オーナーなし,null=Application)
 	 * @param dsapp   [optional] プログレス表示中はアプリケーションウィンドウを無効にするか
 	 * @param breathe [optional] progressValueのsetterでbreatheするかどうか
+	 * @param activate[optional] 表示時にアクティブ化するかどうか
 	 * @return        成功したらtrue
 	 * @description
 	 * プログレスダイアログのstyleにはWS_VISIBLEを指定しないこと
 	 * 閉じるときは必ず closeProgress() を使用すること
 	 * プログレス表示の場合，onInit以外のコールバックは来ないので注意
 	 */
-	function openProgress(id, window, dsapp, breathe);
+	function openProgress(id, window, dsapp=(typeof window!="Object"), breathe=(typeof window=="Object"), activate=true);
 
 	// プログレスダイアログを閉じる
 	function closeProgress();                     
