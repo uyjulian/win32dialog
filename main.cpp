@@ -723,7 +723,7 @@ public:
 				// モードレスダイアログ用フック
 				//	http://support.microsoft.com/kb/233263/ja に基づいて作成
 				if(inst->modeless)
-					inst->hHook = SetWindowsHookEx(WH_GETMESSAGE, (HOOKPROC)GetMsgProc, NULL, GetCurrentThreadId());
+					inst->hHook = SetWindowsHookEx(WH_GETMESSAGE, GetMsgProc, NULL, GetCurrentThreadId());
 				return inst->callback(TJS_W("onInit"),    msg, wparam, lparam);
 			}
 			break;
@@ -1153,7 +1153,7 @@ public:
 		HWND hwnd = _getOpenParent(obj);
 		if (hwnd && MessageBoxHook == 0 && (type & MB_OWNER_CENTER)) {
 			MessageBoxOwnerHWND = hwnd;
-			MessageBoxHook = SetWindowsHookEx(WH_CBT, (HOOKPROC)MessageBoxHookProc,
+			MessageBoxHook = SetWindowsHookEx(WH_CBT, MessageBoxHookProc,
 											  (HINSTANCE)GetModuleHandle(0),
 											  (DWORD)GetWindowThreadProcessId(TVPGetApplicationWindowHandle(), 0));
 			if (MessageBoxHook != NULL) useHook = true;
