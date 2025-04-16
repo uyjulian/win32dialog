@@ -3,6 +3,7 @@
 
 #include <process.h>
 #include <vector>
+#include <algorithm>
 
 template <class T>
 class SimpleThreadBase {
@@ -65,7 +66,7 @@ protected:
 	void closeEvent(HANDLE ev) {
 		if (ev) {
 			::CloseHandle(ev);
-			events.remove(ev);
+			events.erase(std::remove(events.begin(), events.end(), ev), events.end());
 		}
 	}
 
