@@ -509,7 +509,7 @@ public:
 		int id = (int)param[0]->AsInteger();
 		Bitmap *bmp = BitmapAdaptorT::GetNativeInstance(param[1]->AsObjectNoAddRef(), true);
 		if (bmp != NULL)
-			*result = tTJSVariant((tTVInteger)(tjs_intptr_t)self->_sendItemMessage(id, STM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)bmp->createBitmap(self->dialogHWnd)));
+			*result = (tTVInteger)(tjs_intptr_t)self->_sendItemMessage(id, STM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)bmp->createBitmap(self->dialogHWnd));
 		return  TJS_S_OK;
 	}
 
@@ -557,7 +557,7 @@ public:
 		WPARAM wp = (numparams > 2) ? (WPARAM)param[2]->AsInteger() : 0;
 		bool isstr = (numparams > 3) && (param[3]->Type() == tvtString);
 		LPARAM lp = (numparams > 3) ? (isstr ? (LPARAM)param[3]->GetString() : (LPARAM)param[3]->AsInteger()) : 0;
-		*result = tTJSVariant((tTVInteger)(tjs_intptr_t)self->_sendItemMessage(id, msg, wp, lp, isstr));
+		*result = (tTVInteger)(tjs_intptr_t)self->_sendItemMessage(id, msg, wp, lp, isstr);
 		return  TJS_S_OK;
 	}
 protected:
