@@ -3,6 +3,7 @@
 
 #include <process.h>
 #include <vector>
+#include <algorithm>
 
 template <class T>
 class SimpleThreadBase {
@@ -65,7 +66,7 @@ protected:
 	void closeEvent(HANDLE ev) {
 		if (ev) {
 			::CloseHandle(ev);
-			events.remove(ev);
+			events.erase(std::remove(events.begin(), events.end(), ev), events.end());
 		}
 	}
 
@@ -130,7 +131,7 @@ private:
 
 	static LRESULT WINAPI MsgWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
 		if (msg >= WM_APP && msg < 0xC000) {
-			SimpleThreadBase *self = (SimpleThreadBase*)(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
+			InheritedClass *self = (InheritedClass*)(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
 			if (self) return self->onMessage(msg, wp, lp);
 		}
 		return DefWindowProc(hwnd, msg, wp, lp);
@@ -149,7 +150,7 @@ private:
 		HWND hwnd = ::CreateWindowExW(0, (LPCWSTR)MessageWindowClass(), windowName,
 									  0, 0, 0, 1, 1, HWND_MESSAGE, NULL, hinst, NULL);
 		if (!hwnd) TVPThrowExceptionMessage((ttstr(TJS_W("create message window failed: "))+windowName).c_str());
-		::SetWindowLongPtr(hwnd, GWLP_USERDATA, (tjs_intptr_t)this);
+		::SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)(tjs_intptr_t)this);
 		return hwnd;
 	}
 
