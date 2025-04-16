@@ -131,7 +131,7 @@ private:
 
 	static LRESULT WINAPI MsgWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
 		if (msg >= WM_APP && msg < 0xC000) {
-			SimpleThreadBase *self = (SimpleThreadBase*)(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
+			InheritedClass *self = (InheritedClass*)(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
 			if (self) return self->onMessage(msg, wp, lp);
 		}
 		return DefWindowProc(hwnd, msg, wp, lp);
