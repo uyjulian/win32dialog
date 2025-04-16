@@ -497,7 +497,7 @@ public:
 		int id = (int)param[0]->AsInteger();
 		Bitmap *bmp = BitmapAdaptorT::GetNativeInstance(param[1]->AsObjectNoAddRef(), true);
 		if (bmp != NULL)
-			*result = self->_sendItemMessage(id, STM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)bmp->createBitmap(self->dialogHWnd));
+			*result = (tTVInteger)(tjs_intptr_t)self->_sendItemMessage(id, STM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)bmp->createBitmap(self->dialogHWnd));
 		return  TJS_S_OK;
 	}
 
@@ -545,7 +545,7 @@ public:
 		WPARAM wp = (numparams > 2) ? (WPARAM)param[2]->AsInteger() : 0;
 		bool isstr = (numparams > 3) && (param[3]->Type() == tvtString);
 		LPARAM lp = (numparams > 3) ? (isstr ? (LPARAM)param[3]->GetString() : (LPARAM)param[3]->AsInteger()) : 0;
-		*result = self->_sendItemMessage(id, msg, wp, lp, isstr);
+		*result = (tTVInteger)(tjs_intptr_t)self->_sendItemMessage(id, msg, wp, lp, isstr);
 		return  TJS_S_OK;
 	}
 protected:
@@ -1061,7 +1061,7 @@ public:
 			dict.SetValue(TJS_W("page"), si.nPage);
 			dict.SetValue(TJS_W("trackpos"), si.nTrackPos);
 		}
-		VarT	var	= dict;
+		VarT	var	= (iTJSDispatch2*)dict;
 		return var;
 	}
 
@@ -1640,7 +1640,7 @@ void WIN32Dialog::setProgressCanceled(bool b)        { checkProgress();    if (p
 
 // -------------------------------------------------------------
 
-#define ENUM(n) Variant(#n, (long)n, 0)
+#define ENUM(n) Variant(#n, (tTVInteger)n, 0)
 
 NCB_REGISTER_SUBCLASS(Header) {
 	Constructor();
@@ -2946,8 +2946,8 @@ NCB_REGISTER_CLASS(WIN32Dialog) {
 
 	// sizeof item structs
 	// XXX 64bitでエラー。いったんコメントアウト
-	//Variant(TJS_W("SIZEOF_TC_ITEMHEADER"), sizeof(TC_ITEMHEADERW), 0);
-	//Variant(TJS_W("SIZEOF_TC_ITEM"),       sizeof(TC_ITEMW), 0);
+	//Variant(TJS_W("SIZEOF_TC_ITEMHEADER"), (tTVInteger)sizeof(TC_ITEMHEADERW), 0);
+	//Variant(TJS_W("SIZEOF_TC_ITEM"),       (tTVInteger)sizeof(TC_ITEMW), 0);
 
 
 	////////////////
