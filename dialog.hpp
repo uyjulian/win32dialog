@@ -52,8 +52,8 @@ struct DialogTemplate {
 		c += al; // 大きい分には問題ないのでサイズ計算用にはアライン分を足す
 		if (p) {
 #if 1
-			ULONG_PTR n = al-1;
-			p = (BYTE*) (((ULONG_PTR)p + n) & ~n);
+			uintptr_t n = al-1;
+			p = (BYTE*) (((uintptr_t)p + n) & ~n);
 #else
 			ULONGLONG n = al-1;
 			p = (BYTE*) ((intptr_t)(p + n) & ~n);
