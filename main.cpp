@@ -1652,7 +1652,7 @@ void WIN32Dialog::setProgressCanceled(bool b)        { checkProgress();    if (p
 
 // -------------------------------------------------------------
 
-#define ENUM(n) Variant(#n, (tTVInteger)(n), 0)
+#define ENUM(n) Variant(#n, (tTVInteger)n, 0)
 
 NCB_REGISTER_SUBCLASS(Header) {
 	Constructor();
